@@ -102,7 +102,7 @@ func main() {
 		AllowedHeaders: []string{"Origin", "X-Requested-With", "Content-Type", "Accept"},
 	})
 
-	// Wrap your existing HTTP handler with the CORS handler
+	// Wrap existing HTTP handler with the CORS handler
 	handler := c.Handler(mux)
 
 	http.ListenAndServe(":7777", handler)
