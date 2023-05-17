@@ -60,9 +60,8 @@
       border: none;
       cursor: pointer;
       margin-right: 10px;
-    }
-	
-	.container {
+     }
+      .container {
 		display: flex;
 		align-items: center;
 	}
@@ -222,7 +221,7 @@
         console.log(orderId);
 		// Send a request to the server to update the order status
 		$.ajax({
-		  url: 'http://localhost:7777/take?order=2',// + orderId,
+		  url: 'http://localhost:7777/take?order=' + orderId,
 		  method: 'POST',
 		  data: { status: 'preparing' },
 		  success: function(data) {		
