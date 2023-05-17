@@ -203,12 +203,7 @@ func handleTakeOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleUpdates(w http.ResponseWriter, r *http.Request) {
-
-	////+
-	// Set CORS headers
-	//w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
-	//w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-
+	
 	ctx := r.Context()
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -246,11 +241,6 @@ func handleUpdates(w http.ResponseWriter, r *http.Request) {
 func handleGetOrders(w http.ResponseWriter, r *http.Request) {
 	orders, err := OrdersDB.GetOrders()
 
-	// Set CORS headers
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
 	// Convert orders to JSON
 	jsonData, err := json.Marshal(orders)
 	if err != nil {
@@ -262,10 +252,4 @@ func handleGetOrders(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonData)
-}
-
-func handleOrderWithContext(ctx context.Context, ch *amqp.Channel) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		handleOrder(w, r, ctx, ch)
-	}
 }
