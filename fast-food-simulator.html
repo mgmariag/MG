@@ -60,8 +60,9 @@
       border: none;
       cursor: pointer;
       margin-right: 10px;
-     }
-      .container {
+    }
+	
+	.container {
 		display: flex;
 		align-items: center;
 	}
@@ -80,7 +81,7 @@
 	  
 	}
 	
-	.container .takeOrderButton {
+	.container #takeOrderButton {
 	  padding: 5px 10px;
 	  margin-right: 10px;
 	  font-size: 14px;
@@ -94,14 +95,12 @@
 </head>
 <body>
   <h1>Fast Food Simulator</h1>
-
-  <!--<h2>Existing Orders</h2>-->
   <ul id="ordersList" class="order-list">
   </ul>
 
   <div class="button-container">
     <button id="placeOrderButton">Place New Order</button>
-	<input type="text" id="orderInput" placeholder="Enter order">
+    <input type="text" id="orderInput" placeholder="Enter order">
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -119,47 +118,49 @@
         placeNewOrder();
       });
 
-      // Function to load existing orders
+      // Load existing orders
       function loadOrders() {
         $.ajax({
           url: 'http://localhost:7777/orders',
           method: 'GET',
           success: function(data) {
-            //var orders = JSON.parse(data);
+           
 			var orders = data;
             var ordersList = $('#ordersList');
-
-            orders.forEach(function(order) {
-              //var listItem = $('<li>').addClass('order-item');
-			  var listItem = $('<li>').addClass('order-item').attr('id', 'order_' + order.id);
-              var content = $('<div>').addClass('content').text(order.content);
-              var status = $('<div>').addClass('status').text(order.status);
-
-               // Set the class for status based on order status
-			if (order.status) {
-			  status.addClass('status-' + order.status.toLowerCase());
-			  if (order.status.toLowerCase() === 'ready') {
-				listItem.addClass('status-ready');
-			  }
-			}
-
-			var takeOrderButton = $('<button>').addClass('takeOrderButton').text('Take Order in Preparation');
-				takeOrderButton.click(function() {
-				  takeOrderInPreparation(order.id);
-				});
-				
-              
-			// Create a container element for the content and button
-			var container = $('<div>').addClass('container');
-			container.append(content);
-			if (order.status == 'taken') {
-				container.append(takeOrderButton);
-			}
-            listItem.append(container);
-			listItem.append(status);
-            ordersList.append(listItem);
-            });
 			
+            // Clear the list before appending new orders
+            ordersList.empty();
+	        
+			if (orders !== null) {
+				orders.forEach(function(order) {
+				  var listItem = $('<li>').addClass('order-item').attr('id', 'order_' + order.id);
+				  var content = $('<div>').addClass('content').text(order.content);
+				  var status = $('<div>').addClass('status').text(order.status);
+
+				   // Set the class for status based on order status
+				   if (order.status) {
+					  status.addClass('status-' + order.status.toLowerCase());
+					  if (order.status.toLowerCase() === 'ready') {
+						listItem.addClass('status-ready');
+					  }
+				}
+
+				var takeOrderButton = $('<button>').attr('id', 'takeOrderButton').text('Take Order');
+					takeOrderButton.click(function() {
+					  takeOrder(order.id);
+					});
+								 
+				// Create a container element for the content and button
+				var container = $('<div>').addClass('container');
+				container.append(content);
+				if (order.status == 'ready') {
+					container.append(takeOrderButton);
+				}
+				listItem.append(container);
+				listItem.append(status);
+				ordersList.append(listItem);
+				});
+			}
 			// Establish Server-Sent Events connection
             establishSSEConnection();
           },
@@ -170,67 +171,23 @@
       }
 
 	  function establishSSEConnection() {
-        var source = new EventSource('http://localhost:7777/updates');
-        source.addEventListener('message', function(event) {
-          var order = JSON.parse(event.data);
-          handleOrderUpdate(order);
-        });
+	    const evtSource = new EventSource("http://localhost:7777/updates");
+		evtSource.addEventListener("ping", (event) => {
+			loadOrders();
+		});	 
       }
-	  
-      function handleOrderUpdate(order) {
-        var orderItem = $(`#order_${order.id}`);
-        if (orderItem.length === 0) {
-          // New order
-          var listItem = $('<li>').addClass('order-item').attr('id', `order_${order.id}`);
-          var content = $('<div>').addClass('content').text(order.content);
-          var status = $('<div>').addClass('status').text(order.status);
-
-          // Set the class for status based on order status
-          if (order.status) {
-            status.addClass('status-' + order.status.toLowerCase());
-          }
-
-          var takeOrderButton = $('<button>').addClass('take-order-button').text('Take Order');
-          takeOrderButton.click(function() {
-            takeOrder(order.id);
-          });
-
-          listItem.append(content);
-          listItem.append(status);
-          listItem.append(takeOrderButton);
-          $('#ordersList').append(listItem);
-        } else {
-          // Existing order update
-          var statusElement = orderItem.find('.status');
-          statusElement.text(order.status);
-          statusElement.removeClass().addClass('status').addClass(`status-${order.status.toLowerCase()}`);
-        }
-      }
-	  
-      function takeOrderInPreparation() {
-         // Find the first order item with status 'taken'
-		var orderItem = $('.order-item').first();
-		
-		if (orderItem.length === 0) {
-		  // No order in preparation, do nothing
-		  return;
-		}
-
-		// Get the order ID from the order item
-		var orderId = orderItem.attr('id').replace('order_', '');
-        console.log(orderId);
+	  	  
+      function takeOrder(orderId) {
 		// Send a request to the server to update the order status
 		$.ajax({
 		  url: 'http://localhost:7777/take?order=' + orderId,
 		  method: 'POST',
-		  data: { status: 'preparing' },
 		  success: function(data) {		
-			// Remove the 'Take Order in Preparation' button
-			orderItem.find('takeOrderButton').remove();
+			console.log("Order ", orderId, " delivered");
 		  },
 		  error: function(xhr, status, error) {
 			console.error('Request failed:', error);
-		  }
+		  }	  
 		});
       }
 
@@ -240,6 +197,7 @@
 
 		  if (orderContent.length === 0) {
 			// Ignore empty order
+			console.log("Invalid command");
 			return;
 		  }
 
@@ -251,16 +209,12 @@
 			success: function(data) {
 			  // Clear the order input field
 			  orderInput.val('');
-
-			  // Handle the response from the server if needed
-			  // ...
 			},
 			error: function(xhr, status, error) {
 			  console.error('Request failed:', error);
 			}
 		  });
-		}
-
+		}	
     });
   </script>
 </body>
