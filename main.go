@@ -110,18 +110,6 @@ func main() {
 
 func handleOrder(w http.ResponseWriter, r *http.Request, ctx context.Context, ch *amqp.Channel) {
 
-	// Check the request method
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "Invalid request method. Only POST is allowed.")
-		return
-	}
-	// Set CORS headers
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Methods", "POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not read body: %s", err.Error()), http.StatusBadRequest)
@@ -168,6 +156,7 @@ func handleOrder(w http.ResponseWriter, r *http.Request, ctx context.Context, ch
 
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "order number: %v", oid)
+	//fmt.Fprintf(w, "\nevent: ping\ndata: \"%s\"\n\n", "ping")
 }
 
 func handleTakeOrder(w http.ResponseWriter, r *http.Request) {
@@ -203,14 +192,13 @@ func handleTakeOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleUpdates(w http.ResponseWriter, r *http.Request) {
-	
+
 	ctx := r.Context()
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Methods", "GET")
 
 	f, ok := w.(http.Flusher)
 	if !ok {
@@ -232,6 +220,7 @@ func handleUpdates(w http.ResponseWriter, r *http.Request) {
 		case u := <-OrdersDB.Updates:
 			io.WriteString(w, u)
 			w.Write([]byte{'\n'})
+			fmt.Fprintf(w, "event: ping\ndata: \"%s\"\n\n", "ping")
 			f.Flush()
 		}
 	}
